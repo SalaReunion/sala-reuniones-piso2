@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Panel Administrador{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ENCABEZADO ADMIN -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="bg-red-500/10 text-red-600 border border-red-500/20 text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-shield-halved mr-1"></i> Control Total
+        </span>
+      </div>
+      <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">
+        Panel de Administración General
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">
+        Supervisión global de la <strong>Sala de Reuniones del 2do Piso</strong>. Como administrador puedes gestionar y cancelar turnos de cualquier sector.
+      </p>
+    </div>
+
+    <a href="{{ url_for('index') }}" 
+       class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm text-sm transition">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Volver al Almanaque</span>
+    </a>
+  </div>
+
+  <!-- TARJETAS DE USO POR SECTOR -->
+  <div>
+    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+      <i class="fa-solid fa-chart-pie text-brand-600"></i> Ocupación de la Sala por Sector
+    </h3>
+    
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      {% for stat in sector_stats %}
+      <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm">
+        <p class="text-xs font-semibold text-slate-500 truncate">{{ stat.sector }}</p>
+        <p class="text-xl font-bold text-slate-900 mt-1">{{ stat.total_reservas }} <span class="text-xs font-normal text-slate-400">turnos</span></p>
+        <p class="text-[11px] text-brand-600 mt-0.5 font-medium">{{ stat.total_minutos }} min reservados</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TABLA GENERAL DE TODAS LAS RESERVAS -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h3 class="text-base font-bold text-slate-900">
+          Todas las Reservas de la Sala
+        </h3>
+        <p class="text-xs text-slate-500">Historial completo de turnos activos y cancelados de todos los sectores.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{{ url_for('export_csv') }}" 
+           title="Descarga todas las reservas en formato compatible con Google Sheets y Excel"
+           class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3.5 py-1.5 rounded-lg text-xs shadow-sm transition">
+          <i class="fa-solid fa-file-excel text-emerald-200"></i>
+          <span>Exportar a Excel / Sheets (.CSV)</span>
+        </a>
+        <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-3 py-1.5 rounded-lg border border-slate-200">
+          Total: {{ all_reservations|length }} registro(s)
+        </span>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <th class="py-3 px-4">Estado</th>
+            <th class="py-3 px-4">Sector</th>
+            <th class="py-3 px-4">Responsable</th>
+            <th class="py-3 px-4">Fecha & Horario</th>
+            <th class="py-3 px-4">Motivo</th>
+            <th class="py-3 px-4 text-right">Acción Admin</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in all_reservations %}
+          <tr class="hover:bg-slate-50/70 transition-colors">
+            
+            <!-- Estado -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              {% if r.status == 'active' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Activa
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span> Cancelada
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Sector -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              <span class="font-semibold text-slate-800">
+                <i class="fa-solid fa-building text-slate-400 mr-1 text-xs"></i> {{ r.sector }}
+              </span>
+            </td>
+
+            <!-- Usuario creador -->
+            <td class="py-3 px-4 whitespace-nowrap text-slate-700">
+              <div class="font-medium text-xs">{{ r.full_name }}</div>
+              <div class="text-[10px] text-slate-400">@{{ r.username }}</div>
+            </td>
+
+            <!-- Fecha y Horario -->
+            <td class="py-3 px-4 whitespace-nowrap">
+              <div class="font-bold text-slate-900 text-xs">{{ r.date }}</div>
+              <div class="text-xs text-brand-600 font-semibold">{{ r.start_time }} - {{ r.end_time }} ({{ r.duration_minutes }} min)</div>
+            </td>
+
+            <!-- Motivo -->
+            <td class="py-3 px-4 text-xs">
+              <span class="font-semibold text-slate-800 {{ 'line-through text-slate-400' if r.status == 'cancelled' else '' }}">
+                {{ r.title }}
+              </span>
+              {% if r.description %}
+                <div class="text-slate-400 text-[11px] truncate max-w-xs">{{ r.description }}</div>
+              {% endif %}
+              {% if r.status == 'cancelled' %}
+                <div class="text-rose-500 text-[10px] mt-0.5 font-medium">
+                  Cancelada por: {{ r.cancelled_by_name or 'Usuario' }} {% if r.cancellation_reason %}({{ r.cancellation_reason }}){% endif %}
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- Acción de Cancelación Admin -->
+            <td class="py-3 px-4 text-right whitespace-nowrap">
+              {% if r.status == 'active' %}
+                <form action="{{ url_for('cancel_reservation', reservation_id=r.id) }}" method="POST"
+                      onsubmit="return confirm('ATENCIÓN ADMIN: ¿Deseas anular esta reserva de {{ r.full_name }} ({{ r.sector }}) para el {{ r.date }} a las {{ r.start_time }}? El turno quedará libre en el almanaque.');">
+                  <input type="hidden" name="reason" value="Cancelada por Administrador">
+                  <button type="submit" 
+                          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-sm transition">
+                    <i class="fa-solid fa-ban"></i> Cancelar (Admin)
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-xs text-slate-400 italic">Cancelada</span>
+              {% endif %}
+            </td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- USUARIOS REGISTRADOS Y SUS SECTORES -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+    <div class="pb-3 border-b border-slate-100 mb-4 flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <i class="fa-solid fa-users-gear text-slate-600"></i> Usuarios Registrados y Sectores
+      </h3>
+      <span class="text-xs text-slate-500">{{ all_users|length }} usuarios en el sistema</span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      {% for u in all_users %}
+      <div class="p-3 rounded-xl border border-slate-200/70 bg-slate-50/50 flex items-center justify-between">
+        <div>
+          <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+            {{ u.full_name }}
+            {% if u.role == 'admin' %}
+              <span class="bg-red-100 text-red-700 text-[10px] px-1 rounded uppercase font-bold">Admin</span>
+            {% endif %}
+          </div>
+          <div class="text-[11px] text-slate-500 mt-0.5">
+            <i class="fa-solid fa-building text-[10px] text-slate-400 mr-1"></i>Sector: <strong>{{ u.sector }}</strong>
+          </div>
+          <div class="text-[10px] text-slate-400">Usuario: @{{ u.username }}</div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-bold text-brand-600">{{ u.total_bookings }}</span>
+          <div class="text-[9px] text-slate-400 uppercase font-semibold">Reservas</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

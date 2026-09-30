@@ -1,0 +1,93 @@
+/* Estilos complementarios para la aplicación de reservas */
+:root {
+  --primary-color: #1e3a8a;
+  --secondary-color: #3b82f6;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+/* Personalización del Almanaque / FullCalendar */
+.fc {
+  font-family: inherit;
+  --fc-button-bg-color: #3b82f6;
+  --fc-button-border-color: #2563eb;
+  --fc-button-hover-bg-color: #1d4ed8;
+  --fc-button-hover-border-color: #1e40af;
+  --fc-button-active-bg-color: #1e40af;
+  --fc-button-active-border-color: #1e3a8a;
+  --fc-today-bg-color: #eff6ff !important;
+  --fc-event-border-color: transparent;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: capitalize;
+}
+
+.fc .fc-button {
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.fc-event {
+  cursor: pointer;
+  border-radius: 6px !important;
+  padding: 2px 4px !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.fc-col-header-cell-cushion {
+  color: #475569;
+  font-weight: 600;
+  text-decoration: none !important;
+  padding: 8px 0 !important;
+}
+
+.fc-daygrid-day-number {
+  color: #334155;
+  font-weight: 600;
+  text-decoration: none !important;
+  padding: 6px 8px !important;
+}
+
+/* Modales */
+.modal-backdrop-blur {
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+/* Tarjetas animadas */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Badges de sector */
+.sector-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}

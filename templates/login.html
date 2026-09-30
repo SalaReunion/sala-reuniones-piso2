@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Sesión{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto my-6">
+
+  <!-- TARJETA DE LOGIN -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 sm:p-8">
+    
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto text-2xl mb-3 shadow-inner">
+        <i class="fa-solid fa-door-open"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Acceso al Sistema</h2>
+      <p class="text-xs text-slate-500 mt-1">
+        Ingresa con tu usuario del sector para reservar la <strong>Sala de Reuniones del 2do Piso</strong>
+      </p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login') }}" class="space-y-4">
+      
+      <div>
+        <label for="username" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Usuario
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+            <i class="fa-solid fa-user text-sm"></i>
+          </span>
+          <input type="text" id="username" name="username" required
+                 placeholder="Ej: sistemas, rrhh, admin..."
+                 class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+        </div>
+      </div>
+
+      <div>
+        <label for="password" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+          Contraseña
+        </label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+            <i class="fa-solid fa-lock text-sm"></i>
+          </span>
+          <input type="password" id="password" name="password" required
+                 placeholder="••••••••"
+                 class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+        </div>
+      </div>
+
+      <button type="submit" 
+              class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 transition-all hover:scale-[1.01] active:scale-[0.99] text-sm">
+        Ingresar al Sistema
+      </button>
+
+    </form>
+
+    <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+      <p class="text-xs text-slate-600">
+        ¿Tu sector todavía no tiene usuario? 
+        <a href="{{ url_for('register') }}" class="font-bold text-brand-600 hover:text-brand-500">
+          Registrar nuevo usuario aquí
+        </a>
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ACCESO RÁPIDO PARA PRUEBAS -->
+  <div class="mt-6 bg-slate-100/90 rounded-2xl border border-slate-200 p-5 text-xs">
+    <div class="flex items-center gap-2 mb-2 font-bold text-slate-800">
+      <i class="fa-solid fa-bolt text-amber-500"></i>
+      <span>Cuentas de Demostración para Pruebas:</span>
+    </div>
+    <p class="text-slate-600 text-[11px] mb-3">
+      Haz clic en cualquiera para autocompletar e ingresar rápidamente:
+    </p>
+
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" onclick="fillCredentials('admin', 'admin123')"
+              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-red-400 hover:bg-red-50/40 transition">
+        <div class="font-bold text-slate-800 flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-red-500"></span> Admin General
+        </div>
+        <div class="text-[10px] text-slate-500">admin / admin123</div>
+      </button>
+
+      <button type="button" onclick="fillCredentials('sistemas', 'sistemas123')"
+              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/40 transition">
+        <div class="font-bold text-slate-800 flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sistemas / TI
+        </div>
+        <div class="text-[10px] text-slate-500">sistemas / sistemas123</div>
+      </button>
+
+      <button type="button" onclick="fillCredentials('rrhh', 'rrhh123')"
+              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition">
+        <div class="font-bold text-slate-800 flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span> Recursos Humanos
+        </div>
+        <div class="text-[10px] text-slate-500">rrhh / rrhh123</div>
+      </button>
+
+      <button type="button" onclick="fillCredentials('ventas', 'ventas123')"
+              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-pink-400 hover:bg-pink-50/40 transition">
+        <div class="font-bold text-slate-800 flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-pink-500"></span> Comercial / Ventas
+        </div>
+        <div class="text-[10px] text-slate-500">ventas / ventas123</div>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function fillCredentials(user, pass) {
+    document.getElementById('username').value = user;
+    document.getElementById('password').value = pass;
+  }
+</script>
+{% endblock %}

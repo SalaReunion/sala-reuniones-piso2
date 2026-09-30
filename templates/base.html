@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Sala de Reuniones 2do Piso{% endblock %} - Gestión de Reservas</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- FullCalendar CSS & JS -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/es.global.min.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full flex flex-col antialiased text-slate-800">
+
+  <!-- BARRA DE NAVEGACIÓN -->
+  <header class="bg-slate-900 border-b border-slate-800 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo y Nombre de la Sala -->
+        <div class="flex items-center space-x-3">
+          <a href="{{ url_for('index') }}" class="flex items-center space-x-3 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-inner shadow-brand-400/30 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-people-roof text-lg"></i>
+            </div>
+            <div>
+              <div class="font-bold text-base tracking-tight text-white flex items-center gap-2">
+                Sala de Reuniones
+                <span class="text-xs bg-brand-500/20 text-brand-300 border border-brand-500/30 px-2 py-0.5 rounded-full font-medium">2do Piso</span>
+              </div>
+              <div class="text-xs text-slate-400">Sistema de Reservas por Sectores</div>
+            </div>
+          </a>
+        </div>
+
+        {% if current_user %}
+        <!-- Menú de Enlaces Centrales -->
+        <nav class="hidden md:flex items-center space-x-1">
+          <a href="{{ url_for('index') }}" 
+             class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'index' %}bg-slate-800 text-white font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-regular fa-calendar-days mr-1.5 text-brand-400"></i> Almanaque
+          </a>
+
+          <a href="{{ url_for('my_bookings') }}" 
+             class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'my_bookings' %}bg-slate-800 text-white font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-bookmark mr-1.5 text-amber-400"></i> Mis Reservas
+          </a>
+
+          {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_panel') }}" 
+             class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.endpoint == 'admin_panel' %}bg-slate-800 text-white font-semibold{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-shield-halved mr-1.5 text-emerald-400"></i> Panel Administrador
+          </a>
+          {% endif %}
+        </nav>
+
+        <!-- Información de Usuario y Logout -->
+        <div class="flex items-center space-x-3">
+          <div class="hidden sm:flex flex-col items-end">
+            <div class="text-sm font-semibold text-slate-100 flex items-center gap-1.5">
+              {{ current_user.full_name }}
+              {% if current_user.role == 'admin' %}
+                <span class="bg-red-500/20 text-red-300 border border-red-500/30 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Admin</span>
+              {% endif %}
+            </div>
+            <div class="text-xs text-brand-300 flex items-center gap-1">
+              <i class="fa-solid fa-building text-[10px]"></i>
+              <span>Sector: <strong>{{ current_user.sector }}</strong></span>
+            </div>
+          </div>
+
+          <a href="{{ url_for('logout') }}" title="Cerrar sesión" 
+             class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors">
+            <i class="fa-solid fa-arrow-right-from-bracket text-base"></i>
+          </a>
+        </div>
+        {% else %}
+        <div class="flex items-center space-x-3">
+          <a href="{{ url_for('login') }}" class="text-sm text-slate-300 hover:text-white font-medium px-3 py-2">Ingresar</a>
+          <a href="{{ url_for('register') }}" class="text-sm bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-2 rounded-lg font-medium shadow-sm transition">Crear Cuenta</a>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </header>
+
+  <!-- NOTIFICACIONES FLASH -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2">
+          {% for category, message in messages %}
+            <div class="flex items-center justify-between p-4 rounded-xl border shadow-sm transition-all duration-300
+              {% if category == 'success' %} bg-emerald-50 border-emerald-200 text-emerald-800
+              {% elif category == 'danger' %} bg-rose-50 border-rose-200 text-rose-800
+              {% elif category == 'warning' %} bg-amber-50 border-amber-200 text-amber-800
+              {% else %} bg-sky-50 border-sky-200 text-sky-800 {% endif %}"
+              role="alert">
+              <div class="flex items-center gap-3">
+                <i class="text-lg
+                  {% if category == 'success' %} fa-solid fa-circle-check text-emerald-500
+                  {% elif category == 'danger' %} fa-solid fa-circle-exclamation text-rose-500
+                  {% elif category == 'warning' %} fa-solid fa-triangle-exclamation text-amber-500
+                  {% else %} fa-solid fa-circle-info text-sky-500 {% endif %}"></i>
+                <span class="text-sm font-medium">{{ message }}</span>
+              </div>
+              <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-slate-500 text-xs mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-door-open text-brand-600 text-sm"></i>
+        <span><strong>Sala de Reuniones del 2do Piso</strong> &bull; Capacidad: 12 personas &bull; Equipamiento: Pantalla 65", Proyector, Zoom Rooms</span>
+      </div>
+      <div>
+        <span>Regla de uso: Solo la persona que reservó o el administrador pueden cancelar un turno.</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Reservas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ENCABEZADO -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+        <i class="fa-solid fa-bookmark text-amber-500"></i> Mis Reservas
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">
+        Historial y gestión de turnos reservados por <strong>{{ current_user.full_name }}</strong> (Sector: <strong>{{ current_user.sector }}</strong>).
+      </p>
+    </div>
+
+    <a href="{{ url_for('index') }}" 
+       class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm text-sm transition">
+      <i class="fa-solid fa-calendar-plus"></i>
+      <span>Nueva Reserva en el Almanaque</span>
+    </a>
+  </div>
+
+  <!-- TABLA DE RESERVAS DEL USUARIO -->
+  {% if reservations %}
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <th class="py-3.5 px-4">Estado</th>
+            <th class="py-3.5 px-4">Fecha</th>
+            <th class="py-3.5 px-4">Horario</th>
+            <th class="py-3.5 px-4">Duración</th>
+            <th class="py-3.5 px-4">Motivo / Asunto</th>
+            <th class="py-3.5 px-4 text-right">Acción</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in reservations %}
+          <tr class="hover:bg-slate-50/70 transition-colors">
+            <!-- Estado -->
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              {% if r.status == 'active' %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Activa
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span> Cancelada
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Fecha -->
+            <td class="py-3.5 px-4 whitespace-nowrap font-medium text-slate-800">
+              <i class="fa-regular fa-calendar text-slate-400 mr-1.5"></i> {{ r.date }}
+            </td>
+
+            <!-- Horario -->
+            <td class="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900">
+              {{ r.start_time }} - {{ r.end_time }} hs
+            </td>
+
+            <!-- Duración -->
+            <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 text-xs">
+              {{ r.duration_minutes }} minutos
+            </td>
+
+            <!-- Motivo y notas -->
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-slate-900 {{ 'line-through text-slate-400' if r.status == 'cancelled' else '' }}">
+                {{ r.title }}
+              </div>
+              {% if r.description %}
+                <div class="text-xs text-slate-500 truncate max-w-xs mt-0.5">
+                  {{ r.description }}
+                </div>
+              {% endif %}
+              {% if r.status == 'cancelled' and r.cancellation_reason %}
+                <div class="text-[11px] text-rose-500 mt-1">
+                  Motivo cancelación: {{ r.cancellation_reason }}
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- Botón Cancelar -->
+            <td class="py-3.5 px-4 text-right whitespace-nowrap">
+              {% if r.status == 'active' %}
+                <form action="{{ url_for('cancel_reservation', reservation_id=r.id) }}" method="POST" 
+                      onsubmit="return confirm('¿Estás seguro de que deseas cancelar tu reserva para el {{ r.date }} de {{ r.start_time }} a {{ r.end_time }}? El turno se liberará en el almanaque.');">
+                  <button type="submit" 
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 font-semibold text-xs border border-rose-200/80 transition">
+                    <i class="fa-solid fa-ban text-xs"></i> Cancelar Turno
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-xs text-slate-400 italic">Sin acciones</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-12 text-center max-w-lg mx-auto">
+    <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto text-2xl mb-4">
+      <i class="fa-regular fa-calendar-plus"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-800">No tienes reservas realizadas todavía</h3>
+    <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+      Puedes ingresar al almanaque general para ver los horarios disponibles y reservar la Sala del 2do Piso cuando lo necesites.
+    </p>
+    <a href="{{ url_for('index') }}" 
+       class="mt-5 inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md text-sm transition">
+      <i class="fa-solid fa-calendar-days"></i>
+      <span>Ir al Almanaque de Ocupación</span>
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

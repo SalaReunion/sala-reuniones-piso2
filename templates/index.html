@@ -1,0 +1,988 @@
+{% extends "base.html" %}
+
+{% block title %}Almanaque de Reservas{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- CABECERA DE LA SALA Y ACCIONES RÁPIDAS -->
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden">
+    <div class="absolute -right-10 -bottom-10 opacity-10 text-white pointer-events-none">
+      <i class="fa-solid fa-calendar-check text-[180px]"></i>
+    </div>
+
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span> Sistema Operativo
+          </span>
+          <span class="text-xs text-slate-400">Piso 2</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Sala de Reuniones del 2do Piso
+        </h1>
+        <p class="text-slate-300 text-sm mt-1 max-w-2xl">
+          Visualiza en el almanaque los horarios ocupados y reserva el espacio para reuniones de tu sector.
+        </p>
+      </div>
+
+      <!-- Botón Principal Reservar -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <button onclick="openBookingModal()" 
+                class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold px-5 py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <i class="fa-solid fa-calendar-plus text-base"></i>
+          <span>Reservar Turno</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARJETAS DE ESTADO RÁPIDO -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hoy en la sala</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">{{ todays_reservations|length }} turno(s)</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Mis reservas activas</p>
+        <p class="text-2xl font-bold text-amber-600 mt-1">{{ my_active }} turno(s)</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-user-check"></i>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Reservas Futuras</p>
+        <p class="text-2xl font-bold text-emerald-600 mt-1">{{ total_active }}</p>
+      </div>
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+        <i class="fa-solid fa-calendar-days"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN PRINCIPAL: ALMANAQUE Y PANEL LATERAL -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+    <!-- ALMANAQUE / CALENDARIO (3 COLUMNAS) -->
+    <div class="lg:col-span-3 space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-regular fa-calendar text-brand-600"></i> Almanaque de Ocupación
+            </h2>
+            <p class="text-xs text-slate-500">
+              Haz clic en cualquier día o turno para ver información detallada o reservar.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1.5">
+              <i class="fa-solid fa-hand-pointer text-brand-500 text-xs"></i> Clic en evento para cancelar o ver datos
+            </span>
+          </div>
+        </div>
+
+        <!-- Contenedor del Calendario -->
+        <div id="calendar" class="min-h-[620px]"></div>
+
+        <!-- Indicadores de Sectores Registrados (Dinámico) -->
+        {% if SECTORS and SECTORS|length > 0 %}
+        <div class="mt-6 pt-4 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-2.5">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-tags text-slate-400"></i> Sectores Registrados:
+            </p>
+            <span class="text-[11px] text-slate-400">{{ SECTORS|length }} sector(es)</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            {% for sector in SECTORS %}
+            <span class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700 shadow-xs">
+              <span class="w-2.5 h-2.5 rounded-full mr-1.5" style="background-color: {{ sector.color }};"></span>
+              {{ sector.name }}
+            </span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- PANEL LATERAL: RESERVAS DE HOY Y REGLAS (1 COLUMNA) -->
+    <div class="space-y-6">
+
+      <!-- Reservas de hoy -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <span><i class="fa-solid fa-list-check text-brand-600 mr-1.5"></i> Horarios de Hoy</span>
+          <span class="text-xs text-brand-600 font-medium">{{ today_str }}</span>
+        </h3>
+
+        {% if todays_reservations %}
+          <div class="space-y-3">
+            {% for item in todays_reservations %}
+              <div class="p-3 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100/80 transition-colors">
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-bold text-slate-800">
+                    <i class="fa-regular fa-clock text-slate-400 mr-1"></i> {{ item.start_time }} - {{ item.end_time }}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-white border border-slate-200 text-slate-700">
+                    {{ item.duration_minutes }} min
+                  </span>
+                </div>
+                <div class="text-xs font-bold text-slate-900 truncate">
+                  {{ item.title }}
+                </div>
+                <div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                  <span><i class="fa-solid fa-building text-[10px] text-slate-400 mr-1"></i>{{ item.sector }}</span>
+                  <span class="text-slate-600 font-medium">{{ item.full_name }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-8 text-slate-400">
+            <i class="fa-regular fa-calendar-xmark text-3xl mb-2 text-slate-300"></i>
+            <p class="text-xs font-medium">No hay reservas programadas para hoy.</p>
+            <p class="text-[11px] text-slate-400 mt-1">¡La sala se encuentra 100% disponible!</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Normas de uso y cancelación -->
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50/50 rounded-2xl border border-amber-200/60 p-5 text-amber-900 text-xs space-y-2.5">
+        <h4 class="font-bold text-amber-950 flex items-center gap-1.5 text-sm">
+          <i class="fa-solid fa-circle-exclamation text-amber-600"></i> Política de Cancelación
+        </h4>
+        <p class="text-amber-800 leading-relaxed">
+          Para garantizar el orden entre los sectores:
+        </p>
+        <ul class="list-disc list-inside space-y-1 text-amber-800 font-medium">
+          <li><strong>Solamente quien reservó</strong> o un <strong>Administrador</strong> tienen la facultad de cancelar un turno.</li>
+          <li>Al cancelar, el horario queda disponible inmediatamente en el almanaque.</li>
+          <li>No se permiten superposiciones de turnos en el mismo rango horario.</li>
+        </ul>
+      </div>
+
+      <!-- Atajos rápidos -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 text-xs space-y-2">
+        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Mi Cuenta</h4>
+        <div class="p-3 bg-slate-50 rounded-xl space-y-1">
+          <p><span class="text-slate-500">Usuario:</span> <strong>{{ current_user.full_name }}</strong></p>
+          <p><span class="text-slate-500">Sector:</span> <strong class="text-brand-600">{{ current_user.sector }}</strong></p>
+          <p><span class="text-slate-500">Permisos:</span> <strong>{{ 'Administrador General' if current_user.role == 'admin' else 'Usuario Sectorial' }}</strong></p>
+        </div>
+        <a href="{{ url_for('my_bookings') }}" class="block text-center w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-colors">
+          Ver todas mis reservas
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 1: NUEVA RESERVA                      -->
+<!-- ========================================== -->
+<div id="bookingModal" class="fixed inset-0 z-50 hidden overflow-y-auto modal-backdrop-blur">
+  <div class="flex items-center justify-center min-h-screen px-4 py-8 text-center sm:block sm:p-0">
+    
+    <div class="inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl border border-slate-100">
+      
+      <!-- Encabezado Modal -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Reservar Sala de Reuniones</h3>
+            <p class="text-xs text-slate-500">2do Piso &bull; Sector: <strong>{{ current_user.sector }}</strong></p>
+          </div>
+        </div>
+        <button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Formulario de Reserva -->
+      <form action="{{ url_for('create_reservation') }}" method="POST" class="mt-4 space-y-4">
+        
+        <!-- Título / Motivo -->
+        <div>
+          <label for="title" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            Motivo o Título de la Reunión *
+          </label>
+          <input type="text" id="title" name="title" required
+                 placeholder="Ej: Planificación de Proyectos, Entrevista de Trabajo..."
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+        </div>
+
+        <!-- Fecha -->
+        <div>
+          <label for="date" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            Fecha *
+          </label>
+          <input type="date" id="date" name="date" required min="{{ today_str }}" value="{{ today_str }}"
+                 class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+        </div>
+
+        <!-- Horario y Duración en 2 columnas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Horario Inicio -->
+          <div>
+            <label for="start_time" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Hora de Inicio *
+            </label>
+            <select id="start_time" name="start_time" required
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+              <option value="07:00">07:00 hs</option>
+              <option value="07:30">07:30 hs</option>
+              <option value="08:00">08:00 hs</option>
+              <option value="08:30">08:30 hs</option>
+              <option value="09:00">09:00 hs</option>
+              <option value="09:30">09:30 hs</option>
+              <option value="10:00">10:00 hs</option>
+              <option value="10:30">10:30 hs</option>
+              <option value="11:00">11:00 hs</option>
+              <option value="11:30">11:30 hs</option>
+              <option value="12:00">12:00 hs</option>
+              <option value="12:30">12:30 hs</option>
+              <option value="13:00">13:00 hs</option>
+              <option value="13:30">13:30 hs</option>
+              <option value="14:00">14:00 hs</option>
+              <option value="14:30">14:30 hs</option>
+              <option value="15:00">15:00 hs</option>
+              <option value="15:30">15:30 hs</option>
+              <option value="16:00">16:00 hs</option>
+              <option value="16:30">16:30 hs</option>
+              <option value="17:00">17:00 hs</option>
+              <option value="17:30">17:30 hs</option>
+              <option value="18:00">18:00 hs</option>
+              <option value="18:30">18:30 hs</option>
+              <option value="19:00">19:00 hs</option>
+              <option value="19:30">19:30 hs</option>
+              <option value="20:00">20:00 hs</option>
+              <option value="20:30">20:30 hs</option>
+              <option value="21:00">21:00 hs</option>
+            </select>
+          </div>
+
+          <!-- Duración -->
+          <div>
+            <label for="duration" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Duración *
+            </label>
+            <select id="duration" name="duration" required
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition">
+              <option value="30">30 minutos</option>
+              <option value="45">45 minutos</option>
+              <option value="60" selected>1 hora</option>
+              <option value="90">1 hora 30 min</option>
+              <option value="120">2 horas</option>
+              <option value="150">2 horas 30 min</option>
+              <option value="180">3 horas</option>
+              <option value="240">4 horas (Media jornada)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Descripción / Requisitos especiales -->
+        <div>
+          <label for="description" class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+            Descripción o Requisitos (Opcional)
+          </label>
+          <textarea id="description" name="description" rows="2"
+                    placeholder="Ej: Temario de reunión o notas..."
+                    class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"></textarea>
+        </div>
+
+        <!-- SECCIÓN DE RECURRENCIA -->
+        <div class="pt-3 border-t border-slate-200">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="is_recurring" name="is_recurring" value="1" onchange="toggleRecurringOptions()"
+                     class="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500">
+              <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <i class="fa-solid fa-arrows-rotate text-brand-600"></i> Reunión recurrente
+              </span>
+            </label>
+            <span id="recurrence_summary_label" class="text-xs text-brand-700 font-bold bg-brand-50 px-2 py-0.5 rounded border border-brand-200/60"></span>
+          </div>
+
+          <!-- Opciones desplegables de recurrencia -->
+          <div id="recurring_options" class="hidden mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            
+            <!-- Frecuencia -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Recurrencia *
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <label class="flex items-center justify-center p-2 bg-white border border-slate-200 rounded-lg text-xs cursor-pointer hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/50 has-[:checked]:font-bold transition">
+                  <input type="radio" name="recurrence_freq" value="daily" class="mr-1.5" onchange="updateFreqUI()">
+                  <span>Diaria</span>
+                </label>
+                <label class="flex items-center justify-center p-2 bg-white border border-slate-200 rounded-lg text-xs cursor-pointer hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/50 has-[:checked]:font-bold transition">
+                  <input type="radio" name="recurrence_freq" value="weekly" checked class="mr-1.5" onchange="updateFreqUI()">
+                  <span>Semanal</span>
+                </label>
+                <label class="flex items-center justify-center p-2 bg-white border border-slate-200 rounded-lg text-xs cursor-pointer hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/50 has-[:checked]:font-bold transition">
+                  <input type="radio" name="recurrence_freq" value="monthly" class="mr-1.5" onchange="updateFreqUI()">
+                  <span>Mensual</span>
+                </label>
+                <label class="flex items-center justify-center p-2 bg-white border border-slate-200 rounded-lg text-xs cursor-pointer hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/50 has-[:checked]:font-bold transition">
+                  <input type="radio" name="recurrence_freq" value="custom_days" class="mr-1.5" onchange="updateFreqUI()">
+                  <span>Días a elección</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Panel Específico para MENSUAL -->
+            <div id="monthly_selector" class="hidden p-3.5 bg-white border border-slate-200 rounded-xl space-y-3 shadow-sm">
+              
+              <!-- Repetir cada X mes(es) -->
+              <div class="flex items-center gap-2 text-xs">
+                <span class="font-bold text-slate-700 w-28">Repetir cada</span>
+                <select name="monthly_interval" id="monthly_interval" onchange="updateRecurrenceSummary()"
+                        class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500">
+                  <option value="1" selected>1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="12">12</option>
+                </select>
+                <span class="text-slate-600 font-medium">mes(es)</span>
+              </div>
+
+              <!-- Ocurre en -->
+              <div class="space-y-2 text-xs pt-1 border-t border-slate-100">
+                <div class="font-bold text-slate-700 mb-1.5">Ocurre en:</div>
+                
+                <!-- Opción 1: Día X del mes -->
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="monthly_type" value="by_day" id="monthly_type_day" checked onchange="updateMonthlyTypeUI(); updateRecurrenceSummary()"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                  <label for="monthly_type_day" class="cursor-pointer text-slate-700 flex items-center gap-1.5">
+                    <span>Día</span>
+                    <select name="monthly_day" id="monthly_day" onchange="updateRecurrenceSummary()"
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none">
+                      {% for d in range(1, 32) %}
+                      <option value="{{ d }}">{{ d }}</option>
+                      {% endfor %}
+                    </select>
+                    <span>del mes</span>
+                  </label>
+                </div>
+
+                <!-- Opción 2: Primero/Segundo/Tercer/Cuarto/Último día de la semana -->
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="monthly_type" value="by_ordinal" id="monthly_type_ord" onchange="updateMonthlyTypeUI(); updateRecurrenceSummary()"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                  <label for="monthly_type_ord" class="cursor-pointer text-slate-700 flex flex-wrap items-center gap-1.5">
+                    <select name="monthly_ordinal" id="monthly_ordinal" onchange="updateRecurrenceSummary()" disabled
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none">
+                      <option value="1">Primero</option>
+                      <option value="2">Segundo</option>
+                      <option value="3">Tercer</option>
+                      <option value="4">Cuarto</option>
+                      <option value="-1">Último</option>
+                    </select>
+                    <select name="monthly_weekday" id="monthly_weekday" onchange="updateRecurrenceSummary()" disabled
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none">
+                      <option value="0">Lunes</option>
+                      <option value="1">Martes</option>
+                      <option value="2">Miércoles</option>
+                      <option value="3">Jueves</option>
+                      <option value="4">Viernes</option>
+                      <option value="5">Sábado</option>
+                      <option value="6">Domingo</option>
+                    </select>
+                    <span>del mes</span>
+                  </label>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Elección de días de la semana (para semanal o días a elección) -->
+            <div id="days_selector" class="space-y-1">
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                Elegir día(s) de la semana:
+              </label>
+              <div class="flex flex-wrap gap-1.5 text-xs">
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="0" id="rec_day_0" onchange="updateRecurrenceSummary()"> Lun
+                </label>
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="1" id="rec_day_1" onchange="updateRecurrenceSummary()"> Mar
+                </label>
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="2" id="rec_day_2" onchange="updateRecurrenceSummary()"> Mié
+                </label>
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="3" id="rec_day_3" onchange="updateRecurrenceSummary()"> Jue
+                </label>
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="4" id="rec_day_4" onchange="updateRecurrenceSummary()"> Vie
+                </label>
+                <label class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-md cursor-pointer hover:bg-slate-100">
+                  <input type="checkbox" name="recurrence_days" value="5" id="rec_day_5" onchange="updateRecurrenceSummary()"> Sáb
+                </label>
+              </div>
+            </div>
+
+            <!-- Finalización de la Recurrencia (Estilo imagen de referencia) -->
+            <div class="pt-2 border-t border-slate-200 space-y-2 text-xs">
+              <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                Fecha de finalización:
+              </label>
+              
+              <div class="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
+                <!-- Opción 1: Sin fecha de finalización -->
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="recurrence_end_mode" value="no_end" id="end_no_end" onchange="toggleEndModeUI()"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                  <label for="end_no_end" class="cursor-pointer text-slate-700 font-medium">
+                    Sin hora de finalización (hasta 1 año)
+                  </label>
+                </div>
+
+                <!-- Opción 2: Por fecha fija -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <input type="radio" name="recurrence_end_mode" value="by_date" id="end_by_date" checked onchange="toggleEndModeUI()"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                  <label for="end_by_date" class="cursor-pointer text-slate-700 font-medium">
+                    Por
+                  </label>
+                  <input type="date" id="recurrence_end_date" name="recurrence_end_date" onchange="updateRecurrenceSummary()"
+                         class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+
+                <!-- Opción 3: Después de X repeticiones -->
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="recurrence_end_mode" value="by_count" id="end_by_count" onchange="toggleEndModeUI()"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500">
+                  <label for="end_by_count" class="cursor-pointer text-slate-700 font-medium flex items-center gap-1.5">
+                    <span>Después de</span>
+                    <select name="recurrence_count" id="recurrence_count" onchange="updateRecurrenceSummary()" disabled
+                            class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-center">
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5">5</option>
+                      <option value="6">6</option>
+                      <option value="7" selected>7</option>
+                      <option value="8">8</option>
+                      <option value="10">10</option>
+                      <option value="12">12</option>
+                      <option value="15">15</option>
+                      <option value="20">20</option>
+                    </select>
+                    <span>repeticiones</span>
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeBookingModal()" 
+                  class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-sm font-medium transition">
+            Cancelar
+          </button>
+          <button type="submit" 
+                  class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold shadow-md shadow-brand-500/20 transition">
+            Confirmar Reserva
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 2: DETALLES DE RESERVA & CANCELACIÓN  -->
+<!-- ========================================== -->
+<div id="detailsModal" class="fixed inset-0 z-50 hidden overflow-y-auto modal-backdrop-blur">
+  <div class="flex items-center justify-center min-h-screen px-4 py-8 text-center sm:block sm:p-0">
+    
+    <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl border border-slate-100">
+      
+      <!-- Cabecera -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <span id="detailSectorBadge" class="text-xs font-bold px-3 py-1 rounded-full text-white bg-slate-600">
+          Sector
+        </span>
+        <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Cuerpo de datos -->
+      <div class="mt-4 space-y-4">
+        
+        <div>
+          <h3 id="detailTitle" class="text-xl font-bold text-slate-900 leading-snug"></h3>
+          <p id="detailDescription" class="text-xs text-slate-500 mt-1 italic"></p>
+        </div>
+
+        <!-- Indicador de Serie Recurrente -->
+        <div id="detailRecurrenceWrapper" class="hidden flex items-center justify-between text-xs text-brand-700 bg-brand-50 px-3 py-2 rounded-xl border border-brand-200">
+          <span class="font-semibold flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-rotate text-brand-500"></i> Turno Recurrente:
+          </span>
+          <span id="detailRecurrenceText" class="font-bold uppercase tracking-wider text-[11px] bg-white px-2 py-0.5 rounded border border-brand-200"></span>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-xl space-y-2 border border-slate-100 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500 font-medium"><i class="fa-regular fa-calendar mr-1.5 text-slate-400"></i> Fecha:</span>
+            <span id="detailDate" class="font-bold text-slate-800"></span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500 font-medium"><i class="fa-regular fa-clock mr-1.5 text-slate-400"></i> Horario:</span>
+            <span id="detailTime" class="font-bold text-slate-800"></span>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500 font-medium"><i class="fa-solid fa-hourglass-half mr-1.5 text-slate-400"></i> Duración:</span>
+            <span id="detailDuration" class="font-bold text-brand-600"></span>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-200">
+            <span class="text-slate-500 font-medium"><i class="fa-solid fa-user mr-1.5 text-slate-400"></i> Reservado por:</span>
+            <span id="detailUser" class="font-bold text-slate-800"></span>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE CANCELACIÓN CON PERMISOS -->
+        <div id="cancellationSection" class="pt-2">
+          
+          <!-- Si el usuario TIENE permiso para cancelar (es dueño o admin) -->
+          <div id="canCancelContainer" class="hidden">
+            <form id="cancelForm" method="POST" class="space-y-3">
+              <div class="bg-rose-50 border border-rose-200/80 rounded-xl p-3 text-xs text-rose-800">
+                <p class="font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> ¿Deseas cancelar esta reserva?
+                </p>
+                <p class="mt-1 text-[11px] text-rose-700">
+                  El turno será cancelado y el horario quedará inmediatamente liberado en el almanaque.
+                </p>
+              </div>
+
+              <!-- Opción para serie recurrente -->
+              <div id="cancelSeriesContainer" class="hidden p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">
+                <label class="flex items-start gap-2 cursor-pointer font-semibold">
+                  <input type="checkbox" id="cancel_series_check" name="cancel_series" value="1" class="w-4 h-4 text-amber-600 rounded mt-0.5">
+                  <div>
+                    <span>Cancelar este turno y todos los turnos futuros de la serie</span>
+                    <p class="text-[11px] text-amber-700 font-normal">Si no marcas esta casilla, solo se cancelará este día específico.</p>
+                  </div>
+                </label>
+              </div>
+
+              <div>
+                <label for="cancelReason" class="block text-[11px] font-semibold text-slate-600 mb-1">Motivo de la cancelación (opcional):</label>
+                <input type="text" id="cancelReason" name="reason" placeholder="Ej: Reunión reprogramada"
+                       class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+              </div>
+
+              <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeDetailsModal()" 
+                        class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium">
+                  Mantener Turno
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-trash-can"></i> Cancelar Reserva
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Si el usuario NO tiene permiso para cancelar -->
+          <div id="cannotCancelContainer" class="hidden">
+            <div class="p-3 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-2.5">
+              <i class="fa-solid fa-lock text-slate-400 mt-0.5 text-sm"></i>
+              <div>
+                <p class="font-semibold text-slate-700">Reserva protegida</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">
+                  Solamente <strong id="lockedOwnerName">la persona que reservó</strong> o un <strong>Administrador</strong> tienen autorización para cancelar este turno.
+                </p>
+              </div>
+            </div>
+            <div class="flex justify-end pt-3">
+              <button onclick="closeDetailsModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-700">
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let calendar;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+      locale: 'es',
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+      },
+      buttonText: {
+        today: 'Hoy',
+        month: 'Mes',
+        week: 'Semana',
+        day: 'Día',
+        list: 'Lista'
+      },
+      slotMinTime: '07:00:00',
+      slotMaxTime: '21:30:00',
+      allDaySlot: false,
+      nowIndicator: true,
+      navLinks: true,
+      editable: false,
+      selectable: true,
+      selectMirror: true,
+      dayMaxEvents: true,
+      events: '/api/reservations',
+
+      // Clic o selección en un horario o día específico
+      select: function(info) {
+        let datePart = info.startStr.split('T')[0];
+        let timePart = null;
+        if (info.startStr.includes('T')) {
+          let timeRaw = info.startStr.split('T')[1];
+          timePart = timeRaw.substring(0, 5); // Ej: "12:00"
+        }
+        openBookingModal(datePart, timePart);
+      },
+
+      // Clic directo en celda de día u horario
+      dateClick: function(info) {
+        let datePart = info.dateStr.split('T')[0];
+        let timePart = null;
+        if (info.dateStr.includes('T')) {
+          let timeRaw = info.dateStr.split('T')[1];
+          timePart = timeRaw.substring(0, 5);
+        }
+        openBookingModal(datePart, timePart);
+      },
+
+      // Clic en un evento para ver detalles y cancelar si tiene permiso
+      eventClick: function(info) {
+        showEventDetails(info.event);
+      }
+    });
+
+    calendar.render();
+
+    // Event listener para actualizar el día de la semana y mes si cambia la fecha manualmente
+    document.getElementById('date').addEventListener('change', function() {
+      syncWeekdayWithDate(this.value);
+      syncMonthlyWithDate(this.value);
+      updateRecurrenceSummary();
+    });
+  });
+
+  // Funciones de Modal de Nueva Reserva
+  function openBookingModal(dateVal, timeVal) {
+    if (dateVal) {
+      document.getElementById('date').value = dateVal;
+      syncWeekdayWithDate(dateVal);
+      syncMonthlyWithDate(dateVal);
+    }
+    if (timeVal) {
+      const timeSelect = document.getElementById('start_time');
+      let found = false;
+      for (let i = 0; i < timeSelect.options.length; i++) {
+        if (timeSelect.options[i].value === timeVal) {
+          timeSelect.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        let opt = new Option(timeVal + " hs", timeVal, true, true);
+        timeSelect.add(opt);
+        timeSelect.value = timeVal;
+      }
+    }
+    updateFreqUI();
+    updateRecurrenceSummary();
+    document.getElementById('bookingModal').classList.remove('hidden');
+  }
+
+  function closeBookingModal() {
+    document.getElementById('bookingModal').classList.add('hidden');
+  }
+
+  // Sincronizar el checkbox del día de la semana con la fecha seleccionada
+  function syncWeekdayWithDate(dateStr) {
+    if (!dateStr) return;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      let dayIndex = dt.getDay(); // 0 is Sunday
+      let convIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
+      
+      for (let i = 0; i < 6; i++) {
+        let el = document.getElementById('rec_day_' + i);
+        if (el) el.checked = (i === convIndex);
+      }
+
+      // Sugerir fecha límite por defecto de recurrencia (6 meses después)
+      const defaultEndDate = new Date(dt);
+      defaultEndDate.setMonth(defaultEndDate.getMonth() + 6);
+      const endYear = defaultEndDate.getFullYear();
+      const endMonth = String(defaultEndDate.getMonth() + 1).padStart(2, '0');
+      const endDay = String(defaultEndDate.getDate()).padStart(2, '0');
+      const endInput = document.getElementById('recurrence_end_date');
+      if (endInput && !endInput.value) {
+        endInput.value = `${endYear}-${endMonth}-${endDay}`;
+      }
+    }
+  }
+
+  // Sincronizar selectores mensuales con la fecha seleccionada
+  function syncMonthlyWithDate(dateStr) {
+    if (!dateStr) return;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const dayOfMonth = dt.getDate();
+      const monthDaySelect = document.getElementById('monthly_day');
+      if (monthDaySelect) {
+        monthDaySelect.value = String(dayOfMonth);
+      }
+
+      const dayOfWeek = dt.getDay(); // 0 is Sun
+      const convWeekday = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
+      const monthWeekdaySelect = document.getElementById('monthly_weekday');
+      if (monthWeekdaySelect) {
+        monthWeekdaySelect.value = String(convWeekday);
+      }
+
+      // Contar ordinal en el mes
+      const year = dt.getFullYear();
+      const month = dt.getMonth();
+      let countBefore = 0;
+      for (let d = 1; d <= dayOfMonth; d++) {
+        let testDt = new Date(year, month, d);
+        if (testDt.getDay() === dayOfWeek) {
+          countBefore++;
+        }
+      }
+      let isLast = true;
+      for (let d = dayOfMonth + 7; d <= 31; d++) {
+        let testDt = new Date(year, month, d);
+        if (testDt.getMonth() !== month) break;
+        if (testDt.getDay() === dayOfWeek) {
+          isLast = false;
+          break;
+        }
+      }
+      const ordSelect = document.getElementById('monthly_ordinal');
+      if (ordSelect) {
+        if (isLast && countBefore >= 4) {
+          ordSelect.value = "-1"; // Último
+        } else {
+          ordSelect.value = String(countBefore);
+        }
+      }
+    }
+  }
+
+  function toggleRecurringOptions() {
+    const isChecked = document.getElementById('is_recurring').checked;
+    const opts = document.getElementById('recurring_options');
+    if (isChecked) {
+      opts.classList.remove('hidden');
+      syncWeekdayWithDate(document.getElementById('date').value);
+      syncMonthlyWithDate(document.getElementById('date').value);
+      updateFreqUI();
+    } else {
+      opts.classList.add('hidden');
+    }
+    updateRecurrenceSummary();
+  }
+
+  function updateFreqUI() {
+    const freqEl = document.querySelector('input[name="recurrence_freq"]:checked');
+    if (!freqEl) return;
+    const freq = freqEl.value;
+    const daysSelector = document.getElementById('days_selector');
+    const monthlySelector = document.getElementById('monthly_selector');
+
+    if (freq === 'monthly') {
+      daysSelector.classList.add('hidden');
+      monthlySelector.classList.remove('hidden');
+      syncMonthlyWithDate(document.getElementById('date').value);
+    } else if (freq === 'daily') {
+      daysSelector.classList.add('hidden');
+      monthlySelector.classList.add('hidden');
+    } else {
+      daysSelector.classList.remove('hidden');
+      monthlySelector.classList.add('hidden');
+    }
+    updateMonthlyTypeUI();
+    updateRecurrenceSummary();
+  }
+
+  function updateMonthlyTypeUI() {
+    const isDay = document.getElementById('monthly_type_day').checked;
+    document.getElementById('monthly_day').disabled = !isDay;
+    document.getElementById('monthly_ordinal').disabled = isDay;
+    document.getElementById('monthly_weekday').disabled = isDay;
+  }
+
+  function toggleEndModeUI() {
+    const endModeEl = document.querySelector('input[name="recurrence_end_mode"]:checked');
+    if (!endModeEl) return;
+    const endMode = endModeEl.value;
+    const endDateInput = document.getElementById('recurrence_end_date');
+    const countSelect = document.getElementById('recurrence_count');
+
+    endDateInput.disabled = (endMode !== 'by_date');
+    countSelect.disabled = (endMode !== 'by_count');
+    updateRecurrenceSummary();
+  }
+
+  function updateRecurrenceSummary() {
+    const label = document.getElementById('recurrence_summary_label');
+    if (!label) return;
+    const isRecurring = document.getElementById('is_recurring').checked;
+    if (!isRecurring) {
+      label.textContent = "";
+      return;
+    }
+    const freqEl = document.querySelector('input[name="recurrence_freq"]:checked');
+    if (!freqEl) return;
+    const freq = freqEl.value;
+
+    if (freq === 'daily') {
+      label.textContent = "Todos los días hábiles";
+    } else if (freq === 'weekly') {
+      label.textContent = "Cada semana";
+    } else if (freq === 'custom_days') {
+      label.textContent = "Días a elección";
+    } else if (freq === 'monthly') {
+      const intervalEl = document.getElementById('monthly_interval');
+      const interval = intervalEl ? intervalEl.value : "1";
+      const isDay = document.getElementById('monthly_type_day').checked;
+      let monthText = (interval === "1") ? "Cada mes" : `Cada ${interval} meses`;
+      if (isDay) {
+        const dayVal = document.getElementById('monthly_day').value;
+        label.textContent = `${monthText} el día ${dayVal}`;
+      } else {
+        const ordSelect = document.getElementById('monthly_ordinal');
+        const ordText = ordSelect.options[ordSelect.selectedIndex].text;
+        const weekSelect = document.getElementById('monthly_weekday');
+        const weekText = weekSelect.options[weekSelect.selectedIndex].text;
+        label.textContent = `${monthText} los días ${ordText} ${weekText.substring(0, 3)}.`;
+      }
+    }
+  }
+
+  // Funciones de Modal de Detalles y Cancelación
+  function showEventDetails(event) {
+    const props = event.extendedProps;
+
+    document.getElementById('detailTitle').textContent = props.raw_title;
+    document.getElementById('detailDescription').textContent = props.description;
+    document.getElementById('detailDate').textContent = props.date;
+    document.getElementById('detailTime').textContent = `${props.start_time} hs - ${props.end_time} hs`;
+    document.getElementById('detailDuration').textContent = props.duration_text;
+    document.getElementById('detailUser').textContent = `${props.user_name} (${props.sector})`;
+
+    const sectorBadge = document.getElementById('detailSectorBadge');
+    sectorBadge.textContent = props.sector;
+    sectorBadge.style.backgroundColor = event.backgroundColor;
+
+    // Recurrencia
+    const recWrapper = document.getElementById('detailRecurrenceWrapper');
+    const cancelSeriesContainer = document.getElementById('cancelSeriesContainer');
+    if (props.is_recurring) {
+      recWrapper.classList.remove('hidden');
+      let typeLabel = "Serie recurrente";
+      if (props.recurrence_type === 'daily') typeLabel = "Diaria (Días hábiles)";
+      else if (props.recurrence_type === 'weekly') typeLabel = "Semanal";
+      else if (props.recurrence_type === 'monthly') typeLabel = "Mensual";
+      else if (props.recurrence_type === 'custom_days') typeLabel = "Días a elección";
+      document.getElementById('detailRecurrenceText').textContent = typeLabel;
+      cancelSeriesContainer.classList.remove('hidden');
+      document.getElementById('cancel_series_check').checked = false;
+    } else {
+      recWrapper.classList.add('hidden');
+      cancelSeriesContainer.classList.add('hidden');
+    }
+
+    const canCancelContainer = document.getElementById('canCancelContainer');
+    const cannotCancelContainer = document.getElementById('cannotCancelContainer');
+
+    if (props.can_cancel) {
+      canCancelContainer.classList.remove('hidden');
+      cannotCancelContainer.classList.add('hidden');
+      const form = document.getElementById('cancelForm');
+      form.action = `/reservas/${props.id}/cancelar`;
+    } else {
+      canCancelContainer.classList.add('hidden');
+      cannotCancelContainer.classList.remove('hidden');
+      document.getElementById('lockedOwnerName').textContent = `${props.user_name} (${props.sector})`;
+    }
+
+    document.getElementById('detailsModal').classList.remove('hidden');
+  }
+
+  function closeDetailsModal() {
+    document.getElementById('detailsModal').classList.add('hidden');
+  }
+
+  // Cerrar modales con tecla Escape
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeBookingModal();
+      closeDetailsModal();
+    }
+  });
+</script>
+{% endblock %}

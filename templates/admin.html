@@ -17,7 +17,7 @@
         Panel de Administración General
       </h1>
       <p class="text-xs text-slate-500 mt-1">
-        Supervisión global de la <strong>Sala de Reuniones del 2do Piso</strong>. Como administrador puedes gestionar y cancelar turnos de cualquier sector.
+        Supervisión global de la <strong>Sala de Reuniones del 2do Piso</strong>. Como administrador puedes gestionar y cancelar reservas de cualquier sector.
       </p>
     </div>
 
@@ -38,7 +38,7 @@
       {% for stat in sector_stats %}
       <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-sm">
         <p class="text-xs font-semibold text-slate-500 truncate">{{ stat.sector }}</p>
-        <p class="text-xl font-bold text-slate-900 mt-1">{{ stat.total_reservas }} <span class="text-xs font-normal text-slate-400">turnos</span></p>
+        <p class="text-xl font-bold text-slate-900 mt-1">{{ stat.total_reservas }} <span class="text-xs font-normal text-slate-400">reservas</span></p>
         <p class="text-[11px] text-brand-600 mt-0.5 font-medium">{{ stat.total_minutos }} min reservados</p>
       </div>
       {% endfor %}
@@ -52,7 +52,7 @@
         <h3 class="text-base font-bold text-slate-900">
           Todas las Reservas de la Sala
         </h3>
-        <p class="text-xs text-slate-500">Historial completo de turnos activos y cancelados de todos los sectores.</p>
+        <p class="text-xs text-slate-500">Historial completo de reservas activas y canceladas de todos los sectores.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <form action="{{ url_for('purge_cancelled_reservations') }}" method="POST"
@@ -144,7 +144,7 @@
             <td class="py-3 px-4 text-right whitespace-nowrap">
               {% if r.status == 'active' %}
                 <form action="{{ url_for('cancel_reservation', reservation_id=r.id) }}" method="POST"
-                      onsubmit="return confirm('ATENCIÓN ADMIN: ¿Deseas anular esta reserva de {{ r.full_name }} ({{ r.sector }}) para el {{ r.date }} a las {{ r.start_time }}? El turno quedará libre en el almanaque.');">
+                      onsubmit="return confirm('ATENCIÓN ADMIN: ¿Deseas anular esta reserva de {{ r.full_name }} ({{ r.sector }}) para el {{ r.date }} a las {{ r.start_time }}? La sala quedará libre en el almanaque.');">
                   <input type="hidden" name="reason" value="Cancelada por Administrador">
                   <button type="submit" 
                           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-sm transition">

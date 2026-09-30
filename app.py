@@ -452,7 +452,7 @@ def create_reservation():
     conn.close()
 
     if len(dates_to_book) > 1:
-        flash(f"¡Reserva recurrente confirmada con éxito! Se crearon {len(dates_to_book)} turnos para {start_time_val} a {end_time_val} hs.", "success")
+        flash(f"¡Reserva recurrente confirmada con éxito! Se crearon {len(dates_to_book)} reuniones para {start_time_val} a {end_time_val} hs.", "success")
     else:
         flash(f"¡Reserva confirmada con éxito! Sala reservada para el {date_val} de {start_time_val} a {end_time_val} hs.", "success")
     return redirect(url_for("index"))
@@ -501,7 +501,7 @@ def cancel_reservation(reservation_id):
         ''', (cur_user_id, reason, res["recurrence_id"], res["date"]))
         conn.commit()
         conn.close()
-        flash("La serie recurrente (este turno y todas las reuniones futuras) fue cancelada exitosamente.", "success")
+        flash("La serie recurrente (esta reserva y todas las reuniones futuras) fue cancelada exitosamente.", "success")
     else:
         conn.execute('''
             UPDATE reservations
@@ -698,7 +698,7 @@ def delete_user(target_user_id):
     conn.commit()
     conn.close()
 
-    flash(f"El usuario '{target_user['username']}' ({target_user['full_name']}) y sus turnos asociados fueron eliminados del sistema.", "success")
+    flash(f"El usuario '{target_user['username']}' ({target_user['full_name']}) y sus reservas asociadas fueron eliminados del sistema.", "success")
     return redirect(url_for("admin_panel"))
 
 @app.route("/admin/reservas/limpiar-canceladas", methods=["POST"])

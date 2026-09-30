@@ -32,7 +32,7 @@
         <button onclick="openBookingModal()" 
                 class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold px-5 py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]">
           <i class="fa-solid fa-calendar-plus text-base"></i>
-          <span>Reservar Turno</span>
+          <span>Reservar Sala</span>
         </button>
       </div>
     </div>
@@ -43,7 +43,7 @@
     <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
       <div>
         <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Hoy en la sala</p>
-        <p class="text-2xl font-bold text-slate-800 mt-1">{{ todays_reservations|length }} turno(s)</p>
+        <p class="text-2xl font-bold text-slate-800 mt-1">{{ todays_reservations|length }} reunión(es)</p>
       </div>
       <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl">
         <i class="fa-solid fa-clock"></i>
@@ -53,7 +53,7 @@
     <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-sm flex items-center justify-between">
       <div>
         <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Mis reservas activas</p>
-        <p class="text-2xl font-bold text-amber-600 mt-1">{{ my_active }} turno(s)</p>
+        <p class="text-2xl font-bold text-amber-600 mt-1">{{ my_active }} reserva(s)</p>
       </div>
       <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
         <i class="fa-solid fa-user-check"></i>
@@ -84,13 +84,13 @@
               <i class="fa-regular fa-calendar text-brand-600"></i> Almanaque de Ocupación
             </h2>
             <p class="text-xs text-slate-500">
-              Haz clic en cualquier día o turno para ver información detallada o reservar.
+              Haz clic en cualquier día u horario para ver información detallada o reservar la sala.
             </p>
           </div>
 
           <div class="flex items-center gap-2">
             <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1.5">
-              <i class="fa-solid fa-hand-pointer text-brand-500 text-xs"></i> Clic en evento para cancelar o ver datos
+              <i class="fa-solid fa-hand-pointer text-brand-500 text-xs"></i> Clic en una reunión para ver datos o cancelar
             </span>
           </div>
         </div>
@@ -165,15 +165,15 @@
       <!-- Normas de uso y cancelación -->
       <div class="bg-gradient-to-br from-amber-50 to-orange-50/50 rounded-2xl border border-amber-200/60 p-5 text-amber-900 text-xs space-y-2.5">
         <h4 class="font-bold text-amber-950 flex items-center gap-1.5 text-sm">
-          <i class="fa-solid fa-circle-exclamation text-amber-600"></i> Política de Cancelación
+          <i class="fa-solid fa-circle-exclamation text-amber-600"></i> Política de Cancelación de la Sala
         </h4>
         <p class="text-amber-800 leading-relaxed">
-          Para garantizar el orden entre los sectores:
+          Para garantizar la disponibilidad y el orden de la Sala del 2do Piso entre los sectores:
         </p>
         <ul class="list-disc list-inside space-y-1 text-amber-800 font-medium">
-          <li><strong>Solamente quien reservó</strong> o un <strong>Administrador</strong> tienen la facultad de cancelar un turno.</li>
-          <li>Al cancelar, el horario queda disponible inmediatamente en el almanaque.</li>
-          <li>No se permiten superposiciones de turnos en el mismo rango horario.</li>
+          <li><strong>Solamente quien reservó la sala</strong> o un <strong>Administrador</strong> tienen la facultad de cancelar la reserva.</li>
+          <li>Al cancelar, el horario queda disponible inmediatamente en el almanaque para que otro sector pueda utilizar la sala.</li>
+          <li>No se permiten superposiciones: la sala no puede reservarse por dos personas en el mismo horario.</li>
         </ul>
       </div>
 
@@ -553,7 +553,7 @@
         <!-- Indicador de Serie Recurrente -->
         <div id="detailRecurrenceWrapper" class="hidden flex items-center justify-between text-xs text-brand-700 bg-brand-50 px-3 py-2 rounded-xl border border-brand-200">
           <span class="font-semibold flex items-center gap-1.5">
-            <i class="fa-solid fa-arrows-rotate text-brand-500"></i> Turno Recurrente:
+            <i class="fa-solid fa-arrows-rotate text-brand-500"></i> Reserva Recurrente:
           </span>
           <span id="detailRecurrenceText" class="font-bold uppercase tracking-wider text-[11px] bg-white px-2 py-0.5 rounded border border-brand-200"></span>
         </div>
@@ -591,7 +591,7 @@
                   <i class="fa-solid fa-triangle-exclamation text-rose-600"></i> ¿Deseas cancelar esta reserva?
                 </p>
                 <p class="mt-1 text-[11px] text-rose-700">
-                  El turno será cancelado y el horario quedará inmediatamente liberado en el almanaque.
+                  La reserva será cancelada y la sala quedará disponible inmediatamente en el almanaque.
                 </p>
               </div>
 
@@ -600,7 +600,7 @@
                 <label class="flex items-start gap-2 cursor-pointer font-semibold">
                   <input type="checkbox" id="cancel_series_check" name="cancel_series" value="1" class="w-4 h-4 text-amber-600 rounded mt-0.5">
                   <div>
-                    <span>Cancelar este turno y todos los turnos futuros de la serie</span>
+                    <span>Cancelar esta reserva y todas las reuniones futuras de la serie</span>
                     <p class="text-[11px] text-amber-700 font-normal">Si no marcas esta casilla, solo se cancelará este día específico.</p>
                   </div>
                 </label>
@@ -615,7 +615,7 @@
               <div class="flex items-center justify-end gap-2 pt-2">
                 <button type="button" onclick="closeDetailsModal()" 
                         class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium">
-                  Mantener Turno
+                  Mantener Reserva
                 </button>
                 <button type="submit" 
                         class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 transition flex items-center gap-1.5">
@@ -632,7 +632,7 @@
               <div>
                 <p class="font-semibold text-slate-700">Reserva protegida</p>
                 <p class="text-[11px] text-slate-500 mt-0.5">
-                  Solamente <strong id="lockedOwnerName">la persona que reservó</strong> o un <strong>Administrador</strong> tienen autorización para cancelar este turno.
+                  Solamente <strong id="lockedOwnerName">la persona que reservó la sala</strong> o un <strong>Administrador</strong> tienen autorización para cancelar esta reserva.
                 </p>
               </div>
             </div>

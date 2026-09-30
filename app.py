@@ -623,6 +623,54 @@ def export_csv():
         headers={"Content-Disposition": f"attachment;filename={filename}"}
     )
 
+@app.route("/admin/cambiar-password", methods=["POST"])
+@admin_required
+def admin_change_password():
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if not new_password or len(new_password) < 4:
+        flash("La nueva contraseña debe tener al menos 4 caracteres.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    if new_password != confirm_password:
+        flash("Las contraseñas no coinciden.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    conn = get_db_connection()
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(new_password), session["user_id"])
+    )
+    conn.commit()
+    conn.close()
+
+    flash("¡Contraseña de administrador actualizada con éxito!", "success")
+    return redirect(url_for("admin_panel"))
+
+@app.route("/admin/usuarios/<int:target_user_id>/toggle-rol", methods=["POST"])
+@admin_required
+def toggle_user_role(target_user_id):
+    if target_user_id == session["user_id"]:
+        flash("No puedes cambiarte el rol a ti mismo.", "warning")
+        return redirect(url_for("admin_panel"))
+
+    conn = get_db_connection()
+    target_user = conn.execute("SELECT * FROM users WHERE id = ?", (target_user_id,)).fetchone()
+    if not target_user:
+        conn.close()
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    new_role = "admin" if target_user["role"] == "user" else "user"
+    conn.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, target_user_id))
+    conn.commit()
+    conn.close()
+
+    action_text = "ahora es Administrador" if new_role == "admin" else "ahora es Usuario regular"
+    flash(f"El usuario {target_user['full_name']} (@{target_user['username']}) {action_text}.", "success")
+    return redirect(url_for("admin_panel"))
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"

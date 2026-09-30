@@ -66,57 +66,5 @@
 
   </div>
 
-  <!-- ACCESO RÁPIDO PARA PRUEBAS -->
-  <div class="mt-6 bg-slate-100/90 rounded-2xl border border-slate-200 p-5 text-xs">
-    <div class="flex items-center gap-2 mb-2 font-bold text-slate-800">
-      <i class="fa-solid fa-bolt text-amber-500"></i>
-      <span>Cuentas de Demostración para Pruebas:</span>
-    </div>
-    <p class="text-slate-600 text-[11px] mb-3">
-      Haz clic en cualquiera para autocompletar e ingresar rápidamente:
-    </p>
-
-    <div class="grid grid-cols-2 gap-2">
-      <button type="button" onclick="fillCredentials('admin', 'admin123')"
-              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-red-400 hover:bg-red-50/40 transition">
-        <div class="font-bold text-slate-800 flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-red-500"></span> Admin General
-        </div>
-        <div class="text-[10px] text-slate-500">admin / admin123</div>
-      </button>
-
-      <button type="button" onclick="fillCredentials('sistemas', 'sistemas123')"
-              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50/40 transition">
-        <div class="font-bold text-slate-800 flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Sistemas / TI
-        </div>
-        <div class="text-[10px] text-slate-500">sistemas / sistemas123</div>
-      </button>
-
-      <button type="button" onclick="fillCredentials('rrhh', 'rrhh123')"
-              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 transition">
-        <div class="font-bold text-slate-800 flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-blue-500"></span> Recursos Humanos
-        </div>
-        <div class="text-[10px] text-slate-500">rrhh / rrhh123</div>
-      </button>
-
-      <button type="button" onclick="fillCredentials('ventas', 'ventas123')"
-              class="text-left p-2.5 bg-white rounded-lg border border-slate-200 hover:border-pink-400 hover:bg-pink-50/40 transition">
-        <div class="font-bold text-slate-800 flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-pink-500"></span> Comercial / Ventas
-        </div>
-        <div class="text-[10px] text-slate-500">ventas / ventas123</div>
-      </button>
-    </div>
-  </div>
-
 </div>
-
-<script>
-  function fillCredentials(user, pass) {
-    document.getElementById('username').value = user;
-    document.getElementById('password').value = pass;
-  }
-</script>
 {% endblock %}

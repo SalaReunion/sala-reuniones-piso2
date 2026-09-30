@@ -164,26 +164,71 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
       {% for u in all_users %}
-      <div class="p-3 rounded-xl border border-slate-200/70 bg-slate-50/50 flex items-center justify-between">
-        <div>
-          <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-            {{ u.full_name }}
+      <div class="p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50 flex flex-col justify-between gap-2">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+              {{ u.full_name }}
+              {% if u.role == 'admin' %}
+                <span class="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.2 rounded font-bold uppercase">Admin</span>
+              {% else %}
+                <span class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded font-medium">Usuario</span>
+              {% endif %}
+            </div>
+            <div class="text-[11px] text-slate-600 mt-0.5">
+              <i class="fa-solid fa-building text-[10px] text-slate-400 mr-1"></i>Sector: <strong>{{ u.sector }}</strong>
+            </div>
+            <div class="text-[10px] text-slate-400">Usuario: @{{ u.username }}</div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-xs font-bold text-brand-600">{{ u.total_bookings }}</span>
+            <div class="text-[9px] text-slate-400 uppercase font-semibold">Reservas</div>
+          </div>
+        </div>
+
+        {% if u.id != session.user_id %}
+        <div class="pt-2 border-t border-slate-200/60 flex justify-end">
+          <form action="{{ url_for('toggle_user_role', target_user_id=u.id) }}" method="POST"
+                onsubmit="return confirm('¿Seguro que deseas cambiar el rol de {{ u.full_name }}?');">
             {% if u.role == 'admin' %}
-              <span class="bg-red-100 text-red-700 text-[10px] px-1 rounded uppercase font-bold">Admin</span>
+              <button type="submit" class="text-[10px] font-semibold text-rose-600 hover:text-rose-700 hover:underline">
+                <i class="fa-solid fa-user-minus mr-0.5"></i> Quitar privilegios de Admin
+              </button>
+            {% else %}
+              <button type="submit" class="text-[10px] font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">
+                <i class="fa-solid fa-shield-halved mr-0.5"></i> Ascender a Administrador
+              </button>
             {% endif %}
-          </div>
-          <div class="text-[11px] text-slate-500 mt-0.5">
-            <i class="fa-solid fa-building text-[10px] text-slate-400 mr-1"></i>Sector: <strong>{{ u.sector }}</strong>
-          </div>
-          <div class="text-[10px] text-slate-400">Usuario: @{{ u.username }}</div>
+          </form>
         </div>
-        <div class="text-right">
-          <span class="text-xs font-bold text-brand-600">{{ u.total_bookings }}</span>
-          <div class="text-[9px] text-slate-400 uppercase font-semibold">Reservas</div>
-        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
+  </div>
+
+  <!-- CAMBIAR CONTRASEÑA DE ADMINISTRADOR -->
+  <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 max-w-lg">
+    <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-1">
+      <i class="fa-solid fa-key text-slate-600"></i> Cambiar mi Contraseña de Administrador
+    </h3>
+    <p class="text-xs text-slate-500 mb-4">Actualiza la clave con la que ingresas como administrador al sistema.</p>
+
+    <form method="POST" action="{{ url_for('admin_change_password') }}" class="space-y-3">
+      <div>
+        <label for="new_password" class="block text-xs font-semibold text-slate-700 mb-1">Nueva Contraseña</label>
+        <input type="password" id="new_password" name="new_password" required minlength="4" placeholder="Mínimo 4 caracteres"
+               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <div>
+        <label for="confirm_password" class="block text-xs font-semibold text-slate-700 mb-1">Repetir Nueva Contraseña</label>
+        <input type="password" id="confirm_password" name="confirm_password" required minlength="4" placeholder="Repite la contraseña"
+               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+      </div>
+      <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-lg transition">
+        Guardar Nueva Clave
+      </button>
+    </form>
   </div>
 
 </div>

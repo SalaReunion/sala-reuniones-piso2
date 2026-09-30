@@ -49,6 +49,58 @@ def get_sector_color(sector_name):
     hash_val = sum((i + 1) * ord(c) for i, c in enumerate(clean_name))
     return SECTOR_PALETTE[hash_val % len(SECTOR_PALETTE)]
 
+import os
+import sqlite3
+from werkzeug.security import generate_password_hash
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+DB_NAME = "sala_reuniones.db"
+
+# Render a veces entrega postgres:// en lugar de postgresql://
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+class DBConnection:
+    def __init__(self, raw_conn, is_postgres=False):
+        self.raw_conn = raw_conn
+        self.is_postgres = is_postgres
+
+    def execute(self, query, params=None):
+        if self.is_postgres:
+            pg_query = query.replace("?", "%s")
+            cur = self.raw_conn.cursor()
+            if params is not None:
+                cur.execute(pg_query, params)
+            else:
+                cur.execute(pg_query)
+            return cur
+        else:
+            if params is not None:
+                return self.raw_conn.execute(query, params)
+            else:
+                return self.raw_conn.execute(query)
+
+    def commit(self):
+        self.raw_conn.commit()
+
+    def close(self):
+        self.raw_conn.close()
+
+    def cursor(self):
+        return self.raw_conn.cursor()
+
+def get_db_connection():
+    if DATABASE_URL:
+        import psycopg2
+        import psycopg2.extras
+        raw_conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+        return DBConnection(raw_conn, is_postgres=True)
+    else:
+        raw_conn = sqlite3.connect(DB_NAME)
+        raw_conn.row_factory = sqlite3.Row
+        raw_conn.execute("PRAGMA foreign_keys = ON")
+        return DBConnection(raw_conn, is_postgres=False)
+
 def get_active_sectors():
     try:
         conn = get_db_connection()
@@ -58,73 +110,103 @@ def get_active_sectors():
     except Exception:
         return []
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
 def init_db():
     conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Tabla de Usuarios
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            sector TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    # Tabla de Reservas
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS reservations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
-            date TEXT NOT NULL,
-            start_time TEXT NOT NULL,
-            end_time TEXT NOT NULL,
-            duration_minutes INTEGER NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active',
-            cancelled_by INTEGER,
-            cancelled_at TIMESTAMP,
-            cancellation_reason TEXT,
-            recurrence_id TEXT,
-            recurrence_type TEXT DEFAULT 'none',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (cancelled_by) REFERENCES users (id)
-        )
-    ''')
-
-    # Migración segura: agregar columnas si la tabla ya existía
-    cursor.execute("PRAGMA table_info(reservations)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "cancellation_reason" not in columns:
-        cursor.execute("ALTER TABLE reservations ADD COLUMN cancellation_reason TEXT")
-    if "recurrence_id" not in columns:
-        cursor.execute("ALTER TABLE reservations ADD COLUMN recurrence_id TEXT")
-    if "recurrence_type" not in columns:
-        cursor.execute("ALTER TABLE reservations ADD COLUMN recurrence_type TEXT DEFAULT 'none'")
-    conn.commit()
-
-    # Usuario inicial administrador si la tabla está vacía
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute(
-            "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (?, ?, ?, ?, ?)",
-            ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
-        )
+    if conn.is_postgres:
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                full_name VARCHAR(150) NOT NULL,
+                sector VARCHAR(100) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS reservations (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                date VARCHAR(20) NOT NULL,
+                start_time VARCHAR(10) NOT NULL,
+                end_time VARCHAR(10) NOT NULL,
+                duration_minutes INTEGER NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'active',
+                cancelled_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                cancelled_at TIMESTAMP,
+                cancellation_reason TEXT,
+                recurrence_id VARCHAR(100),
+                recurrence_type VARCHAR(50) DEFAULT 'none',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        cur.execute("SELECT COUNT(*) as cnt FROM users;")
+        row = cur.fetchone()
+        count = row['cnt'] if isinstance(row, dict) or hasattr(row, '__getitem__') else row[0]
+        if count == 0:
+            cur.execute(
+                "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (%s, %s, %s, %s, %s)",
+                ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
+            )
+        conn.commit()
+        conn.close()
+    else:
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                full_name TEXT NOT NULL,
+                sector TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS reservations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                date TEXT NOT NULL,
+                start_time TEXT NOT NULL,
+                end_time TEXT NOT NULL,
+                duration_minutes INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                cancelled_by INTEGER,
+                cancelled_at TIMESTAMP,
+                cancellation_reason TEXT,
+                recurrence_id TEXT,
+                recurrence_type TEXT DEFAULT 'none',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (cancelled_by) REFERENCES users (id)
+            )
+        ''')
+        cursor.execute("PRAGMA table_info(reservations)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if "cancellation_reason" not in columns:
+            cursor.execute("ALTER TABLE reservations ADD COLUMN cancellation_reason TEXT")
+        if "recurrence_id" not in columns:
+            cursor.execute("ALTER TABLE reservations ADD COLUMN recurrence_id TEXT")
+        if "recurrence_type" not in columns:
+            cursor.execute("ALTER TABLE reservations ADD COLUMN recurrence_type TEXT DEFAULT 'none'")
         conn.commit()
 
-    conn.close()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute(
+                "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (?, ?, ?, ?, ?)",
+                ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
+            )
+            conn.commit()
+
+        conn.close()
 
 if __name__ == "__main__":
     init_db()

@@ -227,7 +227,11 @@ def api_reservations():
             }
         })
 
-    return jsonify(events)
+    resp = jsonify(events)
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 # ----------------- GESTIÓN DE RESERVAS -----------------
 

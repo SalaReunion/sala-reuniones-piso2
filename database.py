@@ -23,6 +23,7 @@ SECTOR_PALETTE = [
 ]
 
 KNOWN_COLORS = {
+    "admin": "#dc2626",
     "dirección general": "#dc2626",
     "sistemas / ti": "#059669",
     "sistemas": "#059669",
@@ -150,8 +151,10 @@ def init_db():
         if count == 0:
             cur.execute(
                 "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (%s, %s, %s, %s, %s)",
-                ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
+                ("admin", generate_password_hash("admin123"), "Administrador General", "Admin", "admin")
             )
+        else:
+            cur.execute("UPDATE users SET sector = 'Admin' WHERE username = 'admin' AND sector = 'Dirección General';")
         conn.commit()
         conn.close()
     else:
@@ -202,8 +205,11 @@ def init_db():
         if cursor.fetchone()[0] == 0:
             cursor.execute(
                 "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (?, ?, ?, ?, ?)",
-                ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
+                ("admin", generate_password_hash("admin123"), "Administrador General", "Admin", "admin")
             )
+            conn.commit()
+        else:
+            cursor.execute("UPDATE users SET sector = 'Admin' WHERE username = 'admin' AND sector = 'Dirección General'")
             conn.commit()
 
         conn.close()

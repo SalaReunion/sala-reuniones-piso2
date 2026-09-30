@@ -705,6 +705,32 @@ def purge_cancelled_reservations():
     flash(f"Se eliminaron permanentemente {deleted} reserva(s) cancelada(s) del historial.", "success")
     return redirect(url_for("admin_panel"))
 
+@app.route("/admin/usuarios/<int:target_user_id>/reset-password", methods=["POST"])
+@admin_required
+def admin_reset_user_password(target_user_id):
+    conn = get_db_connection()
+    target_user = conn.execute("SELECT * FROM users WHERE id = ?", (target_user_id,)).fetchone()
+    if not target_user:
+        conn.close()
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    new_password = request.form.get("temp_password", "").strip()
+    if not new_password or len(new_password) < 4:
+        conn.close()
+        flash("La contraseña provisoria debe tener al menos 4 caracteres.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(new_password), target_user_id)
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"Contraseña de {target_user['full_name']} (@{target_user['username']}) blanqueada con éxito. La nueva clave es: '{new_password}'", "success")
+    return redirect(url_for("admin_panel"))
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"

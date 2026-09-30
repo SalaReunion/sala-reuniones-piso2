@@ -197,14 +197,22 @@
         </div>
 
         {% if u.id != session.user_id %}
-        <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
-          <form action="{{ url_for('delete_user', target_user_id=u.id) }}" method="POST"
-                onsubmit="return confirm('ATENCIÓN: ¿Seguro que deseas eliminar al usuario {{ u.full_name }} (@{{ u.username }})? Esto liberará su nombre de usuario para que pueda ser registrado nuevamente.');">
-            <button type="submit" class="text-[10px] font-semibold text-slate-400 hover:text-rose-600 transition flex items-center gap-1"
-                    title="Eliminar usuario del sistema">
-              <i class="fa-solid fa-trash-can text-[10px]"></i> Eliminar
+        <div class="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-1.5">
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="promptResetPassword({{ u.id }}, '{{ u.full_name }}', '{{ u.username }}')"
+                    class="text-[10px] font-semibold text-slate-500 hover:text-brand-600 transition flex items-center gap-1"
+                    title="Blanquear contraseña olvidada">
+              <i class="fa-solid fa-key text-[10px]"></i> Blanquear clave
             </button>
-          </form>
+            <span class="text-slate-300">|</span>
+            <form action="{{ url_for('delete_user', target_user_id=u.id) }}" method="POST"
+                  onsubmit="return confirm('ATENCIÓN: ¿Seguro que deseas eliminar al usuario {{ u.full_name }} (@{{ u.username }})? Esto liberará su nombre de usuario.');">
+              <button type="submit" class="text-[10px] font-semibold text-slate-400 hover:text-rose-600 transition flex items-center gap-1"
+                      title="Eliminar usuario del sistema">
+                <i class="fa-solid fa-trash-can text-[10px]"></i> Eliminar
+              </button>
+            </form>
+          </div>
 
           <form action="{{ url_for('toggle_user_role', target_user_id=u.id) }}" method="POST"
                 onsubmit="return confirm('¿Seguro que deseas cambiar el rol de {{ u.full_name }}?');">
@@ -250,4 +258,25 @@
   </div>
 
 </div>
+
+<!-- FORMULARIO OCULTO PARA BLANQUEO DE CONTRASEÑA -->
+<form id="resetPassForm" method="POST" action="" class="hidden">
+  <input type="hidden" name="temp_password" id="resetPassInput">
+</form>
+
+<script>
+  function promptResetPassword(userId, fullName, username) {
+    const newPass = prompt(`Escribe la nueva contraseña provisoria para ${fullName} (@${username}):`, "sala2026");
+    if (newPass !== null) {
+      if (newPass.trim().length >= 4) {
+        const form = document.getElementById('resetPassForm');
+        form.action = `/admin/usuarios/${userId}/reset-password`;
+        document.getElementById('resetPassInput').value = newPass.trim();
+        form.submit();
+      } else {
+        alert("La contraseña debe tener un mínimo de 4 caracteres.");
+      }
+    }
+  }
+</script>
 {% endblock %}

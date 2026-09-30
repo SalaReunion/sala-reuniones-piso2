@@ -106,13 +106,15 @@ def register():
             return render_template("register.html")
 
         hashed = generate_password_hash(password)
-        cursor = conn.cursor()
-        cursor.execute(
+        conn.execute(
             "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (?, ?, ?, ?, 'user')",
             (username, hashed, full_name, sector)
         )
-        new_user_id = cursor.lastrowid
         conn.commit()
+
+        # Obtener el ID asignado de forma compatible con PostgreSQL y SQLite
+        new_user = conn.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,)).fetchone()
+        new_user_id = new_user["id"]
         conn.close()
 
         session["user_id"] = new_user_id

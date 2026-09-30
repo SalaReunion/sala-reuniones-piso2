@@ -61,25 +61,47 @@ DB_NAME = "sala_reuniones.db"
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+class DBCursor:
+    def __init__(self, raw_cursor, is_postgres=False):
+        self.raw_cursor = raw_cursor
+        self.is_postgres = is_postgres
+
+    def execute(self, query, params=None):
+        if self.is_postgres:
+            pg_query = query.replace("?", "%s")
+            if params is not None:
+                return self.raw_cursor.execute(pg_query, params)
+            else:
+                return self.raw_cursor.execute(pg_query)
+        else:
+            if params is not None:
+                return self.raw_cursor.execute(query, params)
+            else:
+                return self.raw_cursor.execute(query)
+
+    def fetchall(self):
+        return self.raw_cursor.fetchall()
+
+    def fetchone(self):
+        return self.raw_cursor.fetchone()
+
+    @property
+    def lastrowid(self):
+        return getattr(self.raw_cursor, "lastrowid", None)
+
+    @property
+    def rowcount(self):
+        return self.raw_cursor.rowcount
+
 class DBConnection:
     def __init__(self, raw_conn, is_postgres=False):
         self.raw_conn = raw_conn
         self.is_postgres = is_postgres
 
     def execute(self, query, params=None):
-        if self.is_postgres:
-            pg_query = query.replace("?", "%s")
-            cur = self.raw_conn.cursor()
-            if params is not None:
-                cur.execute(pg_query, params)
-            else:
-                cur.execute(pg_query)
-            return cur
-        else:
-            if params is not None:
-                return self.raw_conn.execute(query, params)
-            else:
-                return self.raw_conn.execute(query)
+        cur = self.cursor()
+        cur.execute(query, params)
+        return cur
 
     def commit(self):
         self.raw_conn.commit()
@@ -88,7 +110,7 @@ class DBConnection:
         self.raw_conn.close()
 
     def cursor(self):
-        return self.raw_conn.cursor()
+        return DBCursor(self.raw_conn.cursor(), self.is_postgres)
 
 def get_db_connection():
     if DATABASE_URL:

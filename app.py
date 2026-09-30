@@ -671,6 +671,40 @@ def toggle_user_role(target_user_id):
     flash(f"El usuario {target_user['full_name']} (@{target_user['username']}) {action_text}.", "success")
     return redirect(url_for("admin_panel"))
 
+@app.route("/admin/usuarios/<int:target_user_id>/eliminar", methods=["POST"])
+@admin_required
+def delete_user(target_user_id):
+    if target_user_id == session["user_id"]:
+        flash("No puedes eliminar tu propia cuenta de administrador.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    conn = get_db_connection()
+    target_user = conn.execute("SELECT * FROM users WHERE id = ?", (target_user_id,)).fetchone()
+    if not target_user:
+        conn.close()
+        flash("El usuario no existe.", "danger")
+        return redirect(url_for("admin_panel"))
+
+    # Desvincular cancelaciones y eliminar reservas del usuario para mantener la BD íntegra
+    conn.execute("UPDATE reservations SET cancelled_by = NULL WHERE cancelled_by = ?", (target_user_id,))
+    conn.execute("DELETE FROM reservations WHERE user_id = ?", (target_user_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (target_user_id,))
+    conn.commit()
+    conn.close()
+
+    flash(f"El usuario '{target_user['username']}' ({target_user['full_name']}) y sus turnos asociados fueron eliminados del sistema.", "success")
+    return redirect(url_for("admin_panel"))
+
+@app.route("/admin/reservas/limpiar-canceladas", methods=["POST"])
+@admin_required
+def purge_cancelled_reservations():
+    conn = get_db_connection()
+    deleted = conn.execute("DELETE FROM reservations WHERE status = 'cancelled'").rowcount
+    conn.commit()
+    conn.close()
+    flash(f"Se eliminaron permanentemente {deleted} reserva(s) cancelada(s) del historial.", "success")
+    return redirect(url_for("admin_panel"))
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"

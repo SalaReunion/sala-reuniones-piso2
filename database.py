@@ -115,39 +115,12 @@ def init_db():
         cursor.execute("ALTER TABLE reservations ADD COLUMN recurrence_type TEXT DEFAULT 'none'")
     conn.commit()
 
-    # Usuarios iniciales de prueba si la tabla está vacía
+    # Usuario inicial administrador si la tabla está vacía
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        sample_users = [
-            ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin"),
-            ("sistemas", generate_password_hash("sistemas123"), "Lucas Cardozo", "Sistemas / TI", "user"),
-            ("rrhh", generate_password_hash("rrhh123"), "Mariana Gómez", "Recursos Humanos", "user"),
-            ("ventas", generate_password_hash("ventas123"), "Carlos Fernández", "Comercial / Ventas", "user"),
-            ("finanzas", generate_password_hash("finanzas123"), "Valeria Rossi", "Finanzas", "user")
-        ]
-        cursor.executemany(
+        cursor.execute(
             "INSERT INTO users (username, password_hash, full_name, sector, role) VALUES (?, ?, ?, ?, ?)",
-            sample_users
-        )
-        conn.commit()
-
-        # Insertar reservas de demostración para los próximos días
-        import datetime
-        today = datetime.date.today()
-        d1 = today.strftime("%Y-%m-%d")
-        d2 = (today + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        d3 = (today + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
-
-        sample_reservations = [
-            (2, "Planificación Sprint de TI", "Revisión de infraestructura y servidores", d1, "10:00", "11:30", 90, "active"),
-            (3, "Entrevistas de Selección", "Candidatos para área comercial", d1, "14:00", "15:30", 90, "active"),
-            (4, "Reunión Trimestral con Clientes", "Presentación de resultados comerciales", d2, "09:30", "11:00", 90, "active"),
-            (5, "Cierre de Balance Mensual", "Auditoría de estados financieros", d2, "15:00", "17:00", 120, "active"),
-            (1, "Comité Directivo", "Reunión mensual de directores", d3, "11:00", "12:30", 90, "active")
-        ]
-        cursor.executemany(
-            "INSERT INTO reservations (user_id, title, description, date, start_time, end_time, duration_minutes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            sample_reservations
+            ("admin", generate_password_hash("admin123"), "Administrador General", "Dirección General", "admin")
         )
         conn.commit()
 
